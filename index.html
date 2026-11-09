@@ -12,7 +12,7 @@
   --line:#DCE2E8; --line-2:#C5CDD5;
   --income:#1B57C4; --income-bg:#E8F0FD; --expense:#C23A2B; --expense-bg:#FCEDEA;
   --accent:#16324F; --on-accent:#FFFFFF; --focus:#2A78D6; --danger:#C23A2B;
-  --s-inc:#2a78d6; --s-exp:#e34948; --s-sav:#1a9a6c;
+  --s-inc:#2a78d6; --s-exp:#e34948; --s-sav:#1a9a6c; --sav-bg:#E4F4EC; --sav-fg:#0F6F4B;
   --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300; --c7:#4a3aa7; --c8:#e34948; --c9:#8d96a0;
   --c10:#9c6b3f; --c11:#1d9bb0; --c12:#7aa51f;
 }
@@ -23,7 +23,7 @@
     --line:#2A3541; --line-2:#3A4755;
     --income:#86B4FF; --income-bg:#17283F; --expense:#FF9A8C; --expense-bg:#36211F;
     --accent:#8DB6FF; --on-accent:#0D1620; --focus:#6FA8FF; --danger:#FF9A8C;
-    --s-inc:#3987e5; --s-exp:#e66767; --s-sav:#34b88a;
+    --s-inc:#3987e5; --s-exp:#e66767; --s-sav:#34b88a; --sav-bg:#14291F; --sav-fg:#6FD3A8;
     --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767; --c9:#8d96a0;
     --c10:#b8865a; --c11:#2aa9bd; --c12:#8db833;
     color-scheme:dark;
@@ -35,7 +35,7 @@
   --line:#2A3541; --line-2:#3A4755;
   --income:#86B4FF; --income-bg:#17283F; --expense:#FF9A8C; --expense-bg:#36211F;
   --accent:#8DB6FF; --on-accent:#0D1620; --focus:#6FA8FF; --danger:#FF9A8C;
-  --s-inc:#3987e5; --s-exp:#e66767; --s-sav:#34b88a;
+  --s-inc:#3987e5; --s-exp:#e66767; --s-sav:#34b88a; --sav-bg:#14291F; --sav-fg:#6FD3A8;
   --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767; --c9:#8d96a0;
   --c10:#b8865a; --c11:#2aa9bd; --c12:#8db833;
   color-scheme:dark;
@@ -69,7 +69,8 @@ h2,h3,h4,p{margin:0}
 .lrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:16px;padding:16px 12px 16px 18px;min-height:78px}
 .lrow.inc{background:var(--income-bg);color:var(--income)}
 .lrow.exp{background:var(--expense-bg);color:var(--expense)}
-@media (hover:hover){.lrow.inc:hover,.lrow.exp:hover{filter:brightness(.98)}}
+.lrow.sav{background:var(--sav-bg);color:var(--sav-fg)}
+@media (hover:hover){.lrow.inc:hover,.lrow.exp:hover,.lrow.sav:hover{filter:brightness(.98)}}
 .lrow:active{transform:scale(.995)}
 .lt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .ll{font-size:15px;font-weight:600}
@@ -285,6 +286,11 @@ input.inl{height:40px}
       <span class="lv" id="vExp"></span>
       <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
     </button>
+    <button class="lrow sav" type="button" data-act="open-saving">
+      <span class="lt"><span class="ll">저축</span><span class="ls" id="sSav"></span></span>
+      <span class="lv" id="vSav"></span>
+      <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
     <div class="lrow tot" id="rowTot" role="group" aria-label="총: 수입에서 지출을 뺀 금액이에요. 직접 입력할 수 없어요.">
       <span class="lt"><span class="ll">총</span><span class="ls">수입 − 지출 · 자동 계산</span></span>
       <span class="lv" id="vTot"></span>
@@ -313,6 +319,11 @@ input.inl{height:40px}
     <div id="xSum" class="sum"></div>
     <div id="xList"></div>
   </div>
+</section>
+
+<section class="panel" id="pSaving" role="dialog" aria-modal="true" aria-labelledby="tSaving" tabindex="-1" hidden>
+  <header class="phead"><button class="ib" type="button" data-act="close" aria-label="닫기"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><h2 id="tSaving">저축</h2></header>
+  <div class="pbody"><div id="vForm"></div><div id="vSum" class="sum"></div><div id="vList"></div></div>
 </section>
 
 <section class="panel" id="pSettings" role="dialog" aria-modal="true" aria-labelledby="tSettings" tabindex="-1" hidden>
@@ -731,6 +742,8 @@ function renderHome(){
   $('#todayBtn').hidden = !cu && S.ym === currentPeriod();
   $('#vInc').innerHTML = amtHtml(t.inc);
   $('#vExp').innerHTML = amtHtml(t.exp);
+  $('#vSav').innerHTML = amtHtml(t.sav);
+  $('#sSav').textContent = t.sav ? (t.rate == null ? '' : '저축률 ' + (+t.rate.toFixed(1)) + '%') : '눌러서 저축을 입력해요';
   $('#vTot').innerHTML = amtHtml(t.net);
   $('#rowTot').className = 'lrow tot' + (t.net < 0 ? ' neg' : '');
   var si = '';
@@ -754,6 +767,7 @@ function refreshAll(){
   renderHome(); renderView();
   if (S.panel === 'income') renderIncomeLists();
   if (S.panel === 'expense') renderExpenseList();
+  if (S.panel === 'saving') { renderSavingForm(); renderSavingList(); }
   if (S.panel === 'settings') renderSettings(false);
   if (S.panel === 'goals') renderGoalLists();
 }
@@ -955,7 +969,7 @@ function viewCal(){
 }
 
 /* ---------- panels ---------- */
-var PANELS = {income: '#pIncome', expense: '#pExpense', settings: '#pSettings', goals: '#pGoals'};
+var PANELS = {income: '#pIncome', expense: '#pExpense', saving: '#pSaving', settings: '#pSettings', goals: '#pGoals'};
 function showPanel(name){
   hidePanel();
   S.panel = name;
@@ -1021,6 +1035,62 @@ function renderIncomeLists(){
   $('#iList').innerHTML = list.length
     ? '<div class="list">' + list.map(incRow).join('') + '</div>'
     : '<div class="card empty"><p class="hint">추가 수입 내역이 없어요.</p></div>';
+}
+
+/* saving panel */
+function openSaving(o){
+  o = o || {};
+  S.editing = o.edit ? {kind: 'sav', id: o.edit.id, ym: o.edit.ym} : null;
+  if (S.panel !== 'saving') showPanel('saving');
+  $('#tSaving').textContent = moNum(S.ym) + '월 저축';
+  renderSavingForm(); renderSavingList();
+  if (o.edit) $('#pSaving').scrollTop = 0;
+}
+function renderSavingForm(){
+  var goals = settings().goals;
+  var e = S.editing && S.editing.kind === 'sav' ? findEntry('sav', S.editing.ym, S.editing.id) : null;
+  if (S.editing && S.editing.kind === 'sav' && !e) S.editing = null;
+  var r = rangeOf(S.ym), date = e ? e.d : (S.savDate && S.savDate >= r.from && S.savDate <= r.to ? S.savDate : defaultDate());
+  var sel = e ? (e.g || '') : '';
+  var opts = '<option value="">목표 없음 (그냥 저축)</option>' + goals.map(function(g){
+    return '<option value="' + esc(g.id) + '"' + (g.id === sel ? ' selected' : '') + '>' + esc(g.n) + '</option>';
+  }).join('');
+  $('#vForm').innerHTML =
+    '<form id="fSv" class="card form" autocomplete="off"><h3>' + (e ? '저축 수정' : '저축 입력') + '</h3>' +
+    '<div class="two"><label class="fld"><span>금액</span><div class="money"><input type="text" name="a" data-money inputmode="numeric" placeholder="0" value="' + (e ? fmt(e.a) : '') + '"><b>원</b></div></label>' +
+    '<label class="fld"><span>날짜</span><input type="date" name="d" value="' + date + '"></label></div>' +
+    '<label class="fld"><span>어떤 목표에 모을까요?</span><select name="g">' + opts + '</select></label>' +
+    '<label class="fld"><span>메모</span><input type="text" name="m" maxlength="60" placeholder="예: 10월 적금" value="' + esc(e ? e.m : '') + '"></label>' +
+    '<div class="actions"><button class="btn primary" type="submit">' + (e ? '수정 저장' : '저축 추가') + '</button>' +
+    (e ? '<div class="row2"><button class="btn ghost" type="button" data-act="cancel-edit">취소</button><button class="btn danger" type="button" data-act="del-sav">삭제</button></div>' : '') +
+    '</div></form>';
+  decorateMoney($('#vForm'));
+}
+function svRow(e){
+  var g = e.g ? goalById(e.g) : null;
+  return '<button class="erow" type="button" data-act="edit-sav" data-id="' + esc(e.id) + '" data-ym="' + e.d.slice(0, 7) + '">' +
+    '<i class="dot sav"></i><span class="em"><span class="et">' + esc(e.m || (g ? g.n : '저축')) + '</span><span class="es">' + dayLabel(e.d) + (g ? ' · ' + esc(g.n) : '') + '</span></span>' +
+    '<span class="ea inc" style="color:var(--sav-fg)">+' + fmt(e.a) + '<small>원</small></span></button>';
+}
+function renderSavingList(){
+  var list = savOf(S.ym).slice().reverse().sort(function(a, b){ return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; }), t = totals(S.ym);
+  $('#vSum').innerHTML = '<span>' + moNum(S.ym) + '월 저축 합계' + (t.rate == null ? '' : ' · 저축률 ' + (+t.rate.toFixed(1)) + '%') + '</span><b>' + amtSm(t.sav) + '</b>';
+  $('#vList').innerHTML = list.length
+    ? '<div class="list">' + list.map(svRow).join('') + '</div>'
+    : '<div class="card empty"><p class="hint">이번 달 저축 내역이 없어요.</p></div>';
+}
+function submitSaving(f){
+  if (!canWrite()) return;
+  var a = parseMoney(f.elements.a.value), d = f.elements.d.value;
+  if (!a) { toast('금액을 입력해 주세요.', true); f.elements.a.focus(); return; }
+  if (!isDate(d)) { toast('날짜를 확인해 주세요.', true); return; }
+  var g = f.elements.g.value;
+  if (g && !goalById(g)) g = '';
+  var edit = S.editing && S.editing.kind === 'sav' ? S.editing : null;
+  saveEntry('sav', edit, {id: edit ? edit.id : uid(), d: d, a: a, g: g, m: f.elements.m.value.trim().slice(0, 60)});
+  S.editing = null; S.savDate = d;
+  toast(placeText(d) + (edit ? '수정했어요.' : '저축을 추가했어요.'));
+  renderSavingForm(); renderSavingList(); renderHome(); renderView();
 }
 
 /* expense panel */
@@ -1424,7 +1494,7 @@ function buildCsv(yms){
     if (sal) rows.push([label, '', '수입', '월급', sal, '', '']);
     extraOf(ym).slice().sort(byDate).forEach(function(e){ rows.push([label, e.d, '수입', '추가 수입', e.a, e.m || '', '']); });
     expOf(ym).slice().sort(byDate).forEach(function(e){ rows.push([label, e.d, '지출', catInfo(e.c).n, e.a, e.m || '', payName(e.p)]); });
-    savOf(ym).slice().sort(byDate).forEach(function(e){ var g = goalById(e.g); rows.push([label, e.d, '저축', g ? g.n : '목표', e.a, e.m || '', '']); });
+    savOf(ym).slice().sort(byDate).forEach(function(e){ var g = goalById(e.g); rows.push([label, e.d, '저축', g ? g.n : '목표 없음', e.a, e.m || '', '']); });
   });
   return '﻿' + rows.map(function(r){ return r.map(function(v, i){ return csvCell(v, i === 3 || i === 5 || i === 6); }).join(','); }).join('\r\n');
 }
@@ -1473,6 +1543,7 @@ document.addEventListener('click', function(ev){
     case 'tab': S.tab = ds.tab; renderView(); break;
     case 'open-income': openIncome(); break;
     case 'open-expense': openExpense(); break;
+    case 'open-saving': openSaving(); break;
     case 'settings': showPanel('settings'); renderSettings(true); break;
     case 'close': hidePanel(); break;
     case 'pick-month': setMonth(ds.ym); break;
@@ -1484,6 +1555,7 @@ document.addEventListener('click', function(ev){
     case 'cancel-edit':
       S.editing = null;
       if (S.panel === 'goals') renderGoalForms();
+      else if (S.panel === 'saving') renderSavingForm();
       else if (S.panel === 'income') renderIncomeForms(); else renderExpenseForm();
       break;
     case 'goal-new': openGoals({form: 'new'}); break;
@@ -1493,6 +1565,7 @@ document.addEventListener('click', function(ev){
       if (S.goalSel) { S.goalForm = null; renderGoalForms(); } else hidePanel();
       break;
     case 'edit-sav':
+      if (S.panel === 'saving') { openSaving({edit: {id: ds.id, ym: ds.ym}}); break; }
       S.editing = {kind: 'sav', id: ds.id, ym: ds.ym};
       renderGoalForms();
       $('#pGoals').scrollTop = 0;
@@ -1504,7 +1577,8 @@ document.addEventListener('click', function(ev){
       removeEntry('sav', S.editing.ym, S.editing.id);
       S.editing = null;
       toast('삭제했어요.');
-      renderGoalForms(); renderHome(); renderView();
+      if (S.panel === 'saving') { renderSavingForm(); renderSavingList(); } else renderGoalForms();
+      renderHome(); renderView();
       break;
     case 'del-goal':
       if (!S.goalSel) break;
@@ -1596,6 +1670,7 @@ document.addEventListener('submit', function(ev){
     case 'fPay': addNamed('pay', f); break;
     case 'fFx': submitFx(f); break;
     case 'fSav': submitSav(f); break;
+    case 'fSv': submitSaving(f); break;
     case 'fGoal': submitGoal(f); break;
   }
 });
