@@ -447,8 +447,11 @@ function calc(salary, extra, exp, sav){
   var inc = salary + extra;
   return {salary: salary, extra: extra, inc: inc, exp: exp, sav: sav, net: inc - exp, rate: inc > 0 ? sav / inc * 100 : null};
 }
+/* expenses filed under a category whose name contains 저축 also count as savings */
+function isSavExp(e){ return catInfo(e.c).n.indexOf('저축') >= 0; }
+function linkedSum(list){ return sum(list.filter(isSavExp)); }
 function totals(ym){
-  return calc(salaryOf(ym), sum(extraOf(ym)), sum(expOf(ym)), sum(inPeriod('sav', ym)));
+  return calc(salaryOf(ym), sum(extraOf(ym)), sum(expOf(ym)), sum(inPeriod('sav', ym)) + linkedSum(expOf(ym)));
 }
 /* entries by date across all stored months (used for a free date range) */
 function entriesIn(kind, from, to){
@@ -478,7 +481,7 @@ function totalsScope(){
     var v = Number((S.docs[k] || {}).salary) || 0;
     if (v) { var st = rangeOf(k).from; if (st >= f && st <= t) salary += v; }
   });
-  return calc(salary, sum(entriesIn('extra', f, t)), sum(entriesIn('exp', f, t)), sum(entriesIn('sav', f, t)));
+  return calc(salary, sum(entriesIn('extra', f, t)), sum(entriesIn('exp', f, t)), sum(entriesIn('sav', f, t)) + linkedSum(entriesIn('exp', f, t)));
 }
 function diffDays(a, b){ return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000); }
 function setRange(from, to){
@@ -1073,11 +1076,14 @@ function svRow(e){
     '<span class="ea inc" style="color:var(--sav-fg)">+' + fmt(e.a) + '<small>원</small></span></button>';
 }
 function renderSavingList(){
-  var list = savOf(S.ym).slice().reverse().sort(function(a, b){ return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; }), t = totals(S.ym);
+  var byD = function(a, b){ return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; };
+  var list = savOf(S.ym).slice().reverse().sort(byD), t = totals(S.ym);
+  var linked = expOf(S.ym).filter(isSavExp).slice().reverse().sort(byD);
   $('#vSum').innerHTML = '<span>' + moNum(S.ym) + '월 저축 합계' + (t.rate == null ? '' : ' · 저축률 ' + (+t.rate.toFixed(1)) + '%') + '</span><b>' + amtSm(t.sav) + '</b>';
-  $('#vList').innerHTML = list.length
+  $('#vList').innerHTML = (list.length
     ? '<div class="list">' + list.map(svRow).join('') + '</div>'
-    : '<div class="card empty"><p class="hint">이번 달 저축 내역이 없어요.</p></div>';
+    : (linked.length ? '' : '<div class="card empty"><p class="hint">이번 달 저축 내역이 없어요.</p></div>')) +
+    (linked.length ? '<p class="hint" style="margin:12px 4px 6px">지출에서 가져온 저축 (지출 분류가 저축인 내역)</p><div class="list">' + linked.map(expRow).join('') + '</div>' : '');
 }
 function submitSaving(f){
   if (!canWrite()) return;
@@ -1179,9 +1185,18 @@ function goalMonthLine(st){
   return scopeName() + ' ' + (st.month ? '+' + fmt(st.month) + '원' : '모은 돈 없음') + ' · ' + (st.done ? '목표 달성' : '남은 금액 ' + fmt(st.left) + '원');
 }
 
+function allGoalsCard(goals){
+  if (!goals.length) return '';
+  var all = sum(savAll());
+  Object.keys(S.docs).forEach(function(k){ if (isYm(k)) all += linkedSum((S.docs[k] || {}).exp || []); });
+  var tgt = goals.reduce(function(a, g){ return a + (Number(g.t) || 0); }, 0);
+  var st = {saved: all, pct: tgt ? Math.round(all / tgt * 100) : 0};
+  return '<div class="card gcard" style="cursor:default"><div class="gtop"><span class="gname">누적 저축 / 목표 합계</span><span class="gpct num">' + st.pct + '%</span></div>' + progHtml(st) +
+    '<div class="gsum">' + amtSm(all) + ' / ' + amtSm(tgt) + '</div><div class="es">목표를 정하지 않은 저축과 지출의 저축 분류까지 모두 합쳤어요.</div></div>';
+}
 function viewGoal(){
-  var goals = settings().goals, total = sum(inScope('sav'));
-  var head = '<div class="card"><div class="vh"><h3>' + scopeName() + ' 모은 돈</h3><span>목표 ' + goals.length + '개</span></div><div class="hero">' + amtHtml(total) + '</div></div>';
+  var goals = settings().goals, total = sum(inScope('sav')) + linkedSum(inScope('exp'));
+  var head = '<div class="card"><div class="vh"><h3>' + scopeName() + ' 모은 돈</h3><span>목표 ' + goals.length + '개</span></div><div class="hero">' + amtHtml(total) + '</div></div>' + allGoalsCard(goals);
   if (!goals.length) {
     return head + '<div class="card empty"><p>모으고 싶은 목표를 만들어 보세요.<br>목표 금액을 정하고, 모을 때마다 기록하면 얼마나 모았는지 보여요.</p><button class="btn primary sm" type="button" data-act="goal-new">첫 목표 만들기</button></div>';
   }
